@@ -1,0 +1,951 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Todolist with Security Restful API",
+    "version": "1.0.0",
+    "description": "Todolist Restful API implement Spring Security",
+    "contact": {
+      "name": "Adam Dazmy",
+      "email": "adamzamzam571@gmail.com"
+    }
+  },
+  "servers": [
+    {
+      "description": "all server to access the restful api",
+      "url": "https://{etc}.my.id/api/v1",
+      "variables": {
+        "etc": {
+          "description": "think later",
+          "default": "idk"
+        }
+      }
+    }
+  ],
+  "paths": {
+    "/auth/signup": {
+      "post": {
+        "tags": ["Authentication"],
+        "description": "sign up to create new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestSign"
+              },
+              "examples": {
+                "adam": {
+                  "value": {
+                    "username": "adam",
+                    "password": "zamzam"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "success create new user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodySign"
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "status": 201,
+                      "data": "OK",
+                      "errors": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "failed create new user, username must uniq",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodySign"
+                },
+                "examples": {
+                  "failed": {
+                    "value": {
+                      "status": 400,
+                      "data": null,
+                      "errors": "Bad Req, Error Messages"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/signin": {
+      "post": {
+        "tags": ["Authentication"],
+        "description": "sign in to access todolist app",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/requestSign"
+              },
+              "examples": {
+                "adam": {
+                  "value": {
+                    "username": "adam",
+                    "password": "zamzam"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "success sign in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "user": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "username": {
+                              "type": "string"
+                            },
+                            "role": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "token": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "errors": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "status": 200,
+                      "data": {
+                        "user": {
+                          "id": "idString",
+                          "username": "adam",
+                          "role": "USER"
+                        },
+                        "token": "JWT TOKEN"
+                      },
+                      "errors": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "error sign in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodySign"
+                },
+                "examples": {
+                  "failed": {
+                    "value": {
+                      "status": 401,
+                      "data": null,
+                      "errors": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/todolist": {
+      "post": {
+        "tags": ["Todolist"],
+        "description": "create new todo",
+        "security": [
+          {
+            "TodolistAuthentication": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accept"
+          },
+          {
+            "$ref": "#/components/parameters/contentType"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              "examples": {
+                "sleep": {
+                  "value": {
+                    "name": "sleep"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "success create new todo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCreateOrUpdateTodo"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/todolistResponseCreate"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        }
+      },
+      "get": {
+        "tags": ["Todolist"],
+        "description": "get all todolist or filter by like or by done",
+        "security": [
+          {
+            "TodolistAuthentication": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accept"
+          },
+          {
+            "name": "done",
+            "in": "query",
+            "required": false,
+            "description": "filter to show all done todolist",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "examples": {
+              "true": {
+                "value": true
+              },
+              "false": {
+                "value": false
+              }
+            }
+          },
+          {
+            "name": "like",
+            "in": "query",
+            "required": false,
+            "description": "filter to show all like todolist",
+            "schema": {
+              "type": "boolean",
+              "nullable": true
+            },
+            "examples": {
+              "true": {
+                "value": true
+              },
+              "false": {
+                "value": false
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "show all todolist with or without query param",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "integer",
+                      "format": "int32"
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/responseTodolist"
+                      }
+                    },
+                    "errors": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "examples": {
+                  "all": {
+                    "description": "all, include like or done, or neither",
+                    "value": {
+                      "status": 200,
+                      "data": [
+                        {
+                          "id": "idString",
+                          "name": "sleep",
+                          "isLike": false,
+                          "isDone": false,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "read",
+                          "isLike": true,
+                          "isDone": false,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "buy new pc",
+                          "isLike": false,
+                          "isDone": true,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "sing",
+                          "isLike": true,
+                          "isDone": true,
+                          "note": {
+                            "info": null
+                          }
+                        }
+                      ],
+                      "errors": null
+                    }
+                  },
+                  "done": {
+                    "description": "all todolist done",
+                    "value": {
+                      "status": 200,
+                      "data": [
+                        {
+                          "id": "idString",
+                          "name": "sleep",
+                          "isLike": false,
+                          "isDone": true,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "read",
+                          "isLike": true,
+                          "isDone": true,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "buy new pc",
+                          "isLike": false,
+                          "isDone": true,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "sing",
+                          "isLike": true,
+                          "isDone": true,
+                          "note": {
+                            "info": null
+                          }
+                        }
+                      ],
+                      "errors": null
+                    }
+                  },
+                  "like": {
+                    "description": "all todolist like",
+                    "value": {
+                      "status": 200,
+                      "data": [
+                        {
+                          "id": "idString",
+                          "name": "sleep",
+                          "isLike": true,
+                          "isDone": false,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "read",
+                          "isLike": true,
+                          "isDone": false,
+                          "note": {
+                            "info": null
+                          }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "buy new pc",
+                          "isLike": true,
+                          "isDone": true,"note": {
+                          "info": null
+                        }
+                        },
+                        {
+                          "id": "idString",
+                          "name": "sing",
+                          "isLike": true,
+                          "isDone": true,
+                          "note": {
+                            "info": null
+                          }
+                        }
+                      ],
+                      "errors": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          }
+        }
+      }
+    },
+    "/todolist/{todolistId}": {
+      "patch": {
+        "tags": ["Todolist"],
+        "description": "edit todolist, which is update column isLike or isDone",
+        "security": [
+          {
+            "TodolistAuthentication": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accept"
+          },
+          {
+            "$ref": "#/components/parameters/contentType"
+          },
+          {
+            "$ref": "#/components/parameters/todolistId"
+          }
+        ],
+        "requestBody": {
+          "description": "CAN contains all column request, but using patch not put",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "isLike": {
+                    "type": "boolean",
+                    "nullable": true
+                  },
+                  "isDone": {
+                    "type": "boolean",
+                    "nullable": true
+                  }
+                }
+              },
+              "examples": {
+                "name": {
+                  "value": {
+                    "name": "sleep"
+                  }
+                },
+                "like": {
+                  "value": {
+                    "isLike": true
+                  }
+                },
+                "done": {
+                  "value": {
+                    "isDone": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "success edit single todolist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseCreateOrUpdateTodo"
+                },
+                "examples": {
+                  "success": {
+                    "$ref": "#/components/examples/todolistResponseUpdate"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Todolist"],
+        "description": "delete single todolist",
+        "security": [
+          {
+            "TodolistAuthentication": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accept"
+          },
+          {
+            "$ref": "#/components/parameters/todolistId"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "success delete single todolist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseBodySign"
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "status": 200,
+                      "data": "OK",
+                      "errors": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    },
+    "/todolist/{todolistId}/note": {
+      "post": {
+        "tags": ["Todolist", "Note"],
+        "description": "create note for a todo",
+        "security": [
+          {
+            "TodolistAuthentication": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accept"
+          },
+          {
+            "$ref": "#/components/parameters/contentType"
+          },
+          {
+            "$ref": "#/components/parameters/todolistId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/note"
+        },
+        "responses": {
+          "201": {
+            "description": "success create note for a todo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseNote"
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "status": 201,
+                      "data": {
+                        "id": "sameWithIdTodo",
+                        "info": "sleep within 2 hours"
+                      },
+                      "errors": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Todolist", "Note"],
+        "description": "edit note for a todo",
+        "security": [
+          {
+            "TodolistAuthentication": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/accept"
+          },
+          {
+            "$ref": "#/components/parameters/contentType"
+          },
+          {
+            "$ref": "#/components/parameters/todolistId"
+          }
+        ],
+        "requestBody": {
+          "$ref": "#/components/requestBodies/note"
+        },
+        "responses": {
+          "200": {
+            "description": "success create note for a todo",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/responseNote"
+                },
+                "examples": {
+                  "success": {
+                    "value": {
+                      "status": 200,
+                      "data": {
+                        "id": "sameWithIdTodo",
+                        "info": "sleep within 2 hours"
+                      },
+                      "errors": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/401"
+          },
+          "404": {
+            "$ref": "#/components/responses/404"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "TodolistAuthentication": {
+        "type": "apiKey",
+        "name": "Authentication",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "responseBodySign": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "string",
+            "nullable": true
+          },
+          "errors": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "requestSign": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 8
+          },
+          "password": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 8
+          }
+        }
+      },
+      "responseTodolist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string"
+          },
+          "isLike": {
+            "type": "boolean"
+          },
+          "isDone": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "object",
+            "properties": {
+              "info": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "responseNote": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "info": {
+                "type": "string"
+              }
+            }
+          },
+          "errors": {
+            "type": "string"
+          }
+        }
+      },
+      "responseCreateOrUpdateTodo": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "data": {
+            "$ref": "#/components/schemas/responseTodolist"
+          },
+          "errors": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "parameters": {
+      "accept": {
+        "required": true,
+        "name": "Accept",
+        "in": "header",
+        "schema": {
+          "type": "string"
+        },
+        "examples": {
+          "application/json": {
+            "value": "application/json"
+          }
+        }
+      },
+      "contentType": {
+        "required": true,
+        "name": "Content-Type",
+        "in": "header",
+        "schema": {
+          "type": "string"
+        },
+        "examples": {
+          "application/json": {
+            "value": "application/json"
+          }
+        }
+      },
+      "todolistId": {
+        "name": "todolistId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        },
+        "examples": {
+          "idString": {
+            "value": "123123123123"
+          }
+        }
+      }
+    },
+    "responses": {
+      "401": {
+        "description": "error unauthorized",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/responseBodySign"
+            },
+            "examples": {
+              "failed": {
+                "value": {
+                  "status": 401,
+                  "data": null,
+                  "errors": "Unauthorized"
+                }
+              }
+            }
+          }
+        }
+      },
+      "404": {
+        "description": "todolist not found",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/responseBodySign"
+            },
+            "examples": {
+              "failed": {
+                "value": {
+                  "status": 404,
+                  "data": null,
+                  "errors": "todolist not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "examples": {
+      "todolistResponseCreate": {
+        "value": {
+          "status": 201,
+          "data": {
+            "id": 1,
+            "name": "sleep",
+            "isLike": false,
+            "isDone": false,
+            "note": null
+          },
+          "errors": null
+        }
+      },
+      "todolistResponseUpdate": {
+        "value": {
+          "status": 200,
+          "data": {
+            "id": "idString",
+            "name": "sleep",
+            "isLike": false,
+            "isDone": false,
+            "note": null
+          },
+          "errors": null
+        }
+      }
+    },
+    "requestBodies": {
+      "note": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "info": {
+                  "type": "string"
+                }
+              }
+            },
+            "examples": {
+              "sleep": {
+                "value": {
+                  "info": "sleep within 2 hours"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
